@@ -483,6 +483,10 @@ class Server{
 		return "UNKNOWN";
 	}
 
+	public static function checkIfKnownBlock($blockId){
+		return isset(Block::$list[$blockID]);
+	}
+
 	/**
 	 * Parses a string and returns a gamemode integer, -1 if not found
 	 *
