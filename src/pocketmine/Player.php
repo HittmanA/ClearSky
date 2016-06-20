@@ -238,13 +238,13 @@ class Player extends Human implements CommandSender, InventoryHolder, ChunkLoade
 	
 	/** Fishing **/
 	protected $isFishing = false;
-	protected $hook = null;
+	protected $fishEntity = null;
 	public function linkHookToPlayer(Entity $entity){
 		if($entity !== null and $entity instanceof FishingHook and $entity->isAlive()){
 			$this->setHook($entity);
 			$this->isFishing = true;
 			$pk = new EntityEventPacket();
-			$pk->eid = $this->getHook()->getId();
+			$pk->eid = $this->getId();
 			$pk->event = EntityEventPacket::FISH_HOOK_POSITION;
 			$this->server->broadcastPacket($this->level->getPlayers(), $pk);
 			return true;
@@ -264,11 +264,11 @@ class Player extends Human implements CommandSender, InventoryHolder, ChunkLoade
 	}
 	
 	public function getHook(){
-		return $this->hook;
+		return $this->fishEntity;
 	}
 	
 	public function setHook(Entity $entity = null){
-		$this->hook = $entity;
+		$this->fishEntity = $entity;
 	}
 	
 	/** Additional API **/
@@ -1460,6 +1460,9 @@ class Player extends Human implements CommandSender, InventoryHolder, ChunkLoade
 		$flags |= 0x02;
 		$flags |= 0x04;
 
+		$flags |= 0x02;
+		$flags |= 0x04;
+		
 		$pk = new AdventureSettingsPacket();
 		$pk->userPermission = 2;
   		$pk->globalPermission = 2;
@@ -2326,16 +2329,19 @@ class Player extends Human implements CommandSender, InventoryHolder, ChunkLoade
 					$item = $this->inventory->getItem($packet->slot);
 					$slot = $packet->slot;
 				}
+				
 				if($packet->slot === -1){ //Air
 					if($this->isCreative()){
 						$found = false;
-						for($i = 0;$i < $this->inventory->getHotbarSize();++$i){
+						for($i = 0; $i < $this->inventory->getHotbarSize(); ++$i){
 							if($this->inventory->getHotbarSlotIndex($i) === -1){
 								$this->inventory->setHeldItemIndex($i);
+								$this->inventory->sendHeldItem($this->getViewers());
 								$found = true;
 								break;
 							}
 						}
+				
 						if(!$found){ //couldn't find a empty slot (error)
 							$this->inventory->sendContents($this);
 							break;
@@ -2365,7 +2371,7 @@ class Player extends Human implements CommandSender, InventoryHolder, ChunkLoade
 						break;
 					}
 				}
-				$this->inventory->sendHeldItem($this->hasSpawned);
+				
 				$this->setDataFlag(self::DATA_FLAGS, self::DATA_FLAG_ACTION, false);
 				break;
 			case ProtocolInfo::USE_ITEM_PACKET:
